@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root {
+/* :root {
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -23,4 +23,91 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+} */
+
+/* Basic page layout */
+html, body, #__next {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+main {
+  padding: 1rem;
+}
+
+/* Dashboard split layout */
+.dashboard {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 1rem;
+  height: calc(100vh - 2rem);
+  align-items: stretch;
+}
+
+/* Panel styling */
+.panel {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  overflow: auto;
+}
+
+/* Map container sizing */
+.map-wrapper {
+  border-radius: 12px;
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Ticket item */
+.ticket {
+  display: flex;
+  gap: 10px;
+  padding: 8px 6px;
+  border-bottom: 1px solid #f0f0f0;
+  align-items: center;
+}
+.ticket:last-child { border-bottom: none; }
+
+.ticket img.thumb {
+  width: 72px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e6e6e6;
+}
+
+.ticket-info { flex: 1; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+  color: white;
+  font-weight: 600;
+}
+.badge.high { background: #ef4444; }    /* red */
+.badge.medium { background: #f59e0b; }  /* orange */
+.badge.low { background: #10b981; }     /* green */
+
+.status {
+  font-size: 12px;
+  color: #374151;
+}
+.btn {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.btn.ghost {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  color: #111827;
 }
