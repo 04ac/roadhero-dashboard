@@ -66,40 +66,36 @@ function RouteLine({
       onLoadingChange(false);
     };
 
-    const clearRoute = () => {
+    const clearRouteLayers = () => {
       try {
-        const layerMap = routePolylineRef.current?._map;
-        (layerMap || map)?.removeLayer?.(routePolylineRef.current);
-      } catch {}
+        if (
+          routePolylineRef.current &&
+          map?.hasLayer(routePolylineRef.current)
+        ) {
+          map.removeLayer(routePolylineRef.current);
+        }
+      } catch (e) {
+        console.error("Error removing route polyline:", e);
+      }
       routePolylineRef.current = null;
 
       try {
-        const decoratorMap = decoratorRef.current?._map;
-        (decoratorMap || map)?.removeLayer?.(decoratorRef.current);
-      } catch {}
+        if (decoratorRef.current && map?.hasLayer(decoratorRef.current)) {
+          map.removeLayer(decoratorRef.current);
+        }
+      } catch (e) {
+        console.error("Error removing route decorator:", e);
+      }
       decoratorRef.current = null;
     };
 
-    const cleanup = () => {
-      stopLoading();
-      clearRoute();
-    };
-
-    // Always clear routes first when effect runs (tickets or mode changed)
-    clearRoute();
-
-    // Early exits
+    // If < 2 tickets, clear any existing route and stop.
     if (!tickets?.length || tickets.length < 2) {
+      clearRouteLayers();
       stopLoading();
       return;
     }
 
-    // If already calculating, skip to avoid race conditions
-    if (isCalculatingRef.current) {
-      return;
-    }
-
-    // Start calculation
     isCalculatingRef.current = true;
     onLoadingChange(true);
 
@@ -110,24 +106,17 @@ function RouteLine({
 
     const fetchOptimalRoute = async () => {
       try {
-        clearRoute();
-
         const coordString = coords.map((c) => `${c[0]},${c[1]}`).join(";");
-
         let url: string;
-        let routeCoords: [number, number][];
 
         if (optimizeRoute) {
-          // For fully optimized route, use a simple greedy nearest-neighbor algorithm
-          // since OSRM public API doesn't support full TSP optimization
+          // Greedy nearest-neighbor algorithm for simple TSP
           const unvisited = [...coords];
-          const orderedCoords = [unvisited.shift()!]; // Start with first point
-
+          const orderedCoords = [unvisited.shift()!];
           while (unvisited.length > 0) {
             const last = orderedCoords[orderedCoords.length - 1];
             let nearestIdx = 0;
             let minDist = Infinity;
-
             unvisited.forEach((coord, idx) => {
               const dist = Math.sqrt(
                 Math.pow(coord[0] - last[0], 2) +
@@ -138,11 +127,8 @@ function RouteLine({
                 nearestIdx = idx;
               }
             });
-
             orderedCoords.push(unvisited.splice(nearestIdx, 1)[0]);
           }
-
-          // Now get the route for the optimized order
           const optimizedString = orderedCoords
             .map((c) => `${c[0]},${c[1]}`)
             .join(";");
@@ -152,18 +138,17 @@ function RouteLine({
           url = `https://router.project-osrm.org/route/v1/driving/${coordString}?overview=full&geometries=geojson`;
         }
 
-        console.log("Fetching route:", url);
         const response = await fetch(url);
         const data = await response.json();
-        console.log("OSRM Response:", data);
 
         if (data.code === "Ok" && data.routes?.[0]) {
+          // Check if we are still the active calculation
+          if (!isCalculatingRef.current) return;
+
           const route = data.routes[0];
-          routeCoords = route.geometry.coordinates.map(
+          const routeCoords = route.geometry.coordinates.map(
             (coord: number[]) => [coord[1], coord[0]] as [number, number]
           );
-
-          console.log(`Route calculated with ${routeCoords.length} points`);
 
           // Draw optimized route on map
           routePolylineRef.current = L.polyline(routeCoords, {
@@ -172,7 +157,7 @@ function RouteLine({
             opacity: 0.75,
           }).addTo(map);
 
-          // Add directional arrows to show travel direction
+          // Add directional arrows
           if (PolylineDecorator) {
             decoratorRef.current = (L as any)
               .polylineDecorator(routePolylineRef.current, {
@@ -194,19 +179,17 @@ function RouteLine({
               .addTo(map);
           }
 
-          // Fit bounds to route
           map.fitBounds(routePolylineRef.current.getBounds(), {
             padding: [40, 40],
           });
-
           stopLoading();
         } else {
-          console.error("OSRM returned error:", data.code, data.message);
           throw new Error(
             `Route optimization failed: ${data.message || data.code}`
           );
         }
       } catch (error) {
+        if (!isCalculatingRef.current) return; // Bailed out
         console.error("OSRM Route API error:", error);
         // Fallback: draw simple straight lines
         const fallbackCoords = coords.map(
@@ -226,17 +209,50 @@ function RouteLine({
     const timeoutId = setTimeout(stopLoading, 15000);
     fetchOptimalRoute().finally(() => clearTimeout(timeoutId));
 
-    return cleanup;
+    // This cleanup function runs when deps change or component unmounts
+    return () => {
+      stopLoading();
+      clearTimeout(timeoutId);
+      clearRouteLayers();
+    };
   }, [tickets, map, onLoadingChange, optimizeRoute]);
 
   return null;
 }
+
+const mapThemes = [
+  {
+    name: "Default Light",
+    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution:
+      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  },
+  {
+    name: "Carto Dark",
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution:
+      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  {
+    name: "Stadia Dark",
+    url: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png",
+    attribution:
+      '© <a href="https://stadiamaps.com/">Stadia Maps</a>, © <a href="https://openmaptiles.org/">OpenMapTiles</a> © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
+  },
+  {
+    name: "Labeled Satelite",
+    url: "https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.png",
+    attribution:
+      '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
+  },
+];
 
 export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
   const [showRoutes, setShowRoutes] = useState(true);
   const [isCalculatingRoutes, setIsCalculatingRoutes] = useState(false);
   const [optimizeRoute, setOptimizeRoute] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [currentTheme, setCurrentTheme] = useState(mapThemes[0]);
 
   const severityColors = { HIGH: "red", MEDIUM: "orange", LOW: "green" };
   const severityWeights = { HIGH: 3, MEDIUM: 2, LOW: 1 };
@@ -279,10 +295,29 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
     [tickets]
   );
 
+  const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const themeName = e.target.value;
+    const newTheme = mapThemes.find((t) => t.name === themeName);
+    if (newTheme) {
+      setCurrentTheme(newTheme);
+    }
+  };
+
   return (
     <div className="relative w-full h-[85vh] rounded-xl overflow-hidden shadow">
       {/* Control buttons */}
-      <div className="absolute top-3 right-3 z-1001 flex gap-2">
+      <div className="absolute top-3 right-3 z-1001 flex flex-col sm:flex-row gap-2">
+        <select
+          onChange={handleThemeChange}
+          value={currentTheme.name}
+          className="bg-white/95 backdrop-blur-sm text-sm text-gray-700 font-medium border border-gray-200 rounded-lg px-3 py-1.5 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all appearance-none"
+        >
+          {mapThemes.map((theme) => (
+            <option key={theme.name} value={theme.name}>
+              {theme.name}
+            </option>
+          ))}
+        </select>
         <button
           onClick={() => setOptimizeRoute((o) => !o)}
           className="bg-white/95 backdrop-blur-sm text-sm text-gray-700 font-medium border border-gray-200 rounded-lg px-3 py-1.5 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all"
@@ -317,7 +352,11 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
         zoom={13}
         className="h-full w-full"
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <TileLayer
+          key={currentTheme.name} // Force re-render on theme change
+          url={currentTheme.url}
+          attribution={currentTheme.attribution}
+        />
         <FitToBounds tickets={activeTickets} />
         {showRoutes && (
           <RouteLine
@@ -354,7 +393,7 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
                   />
                 )}
                 <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${t.pothole_metadata.latitude},${t.pothole_metadata.longitude}`}
+                  href={`https://maps.google.com/?q=${t.pothole_metadata.latitude},${t.pothole_metadata.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-blue-600 hover:underline text-xs mt-2"
