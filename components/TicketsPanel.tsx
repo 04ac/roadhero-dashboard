@@ -50,8 +50,10 @@ export default function TicketsPanel({
 
   return (
     <div className="bg-black rounded-xl shadow-2xl p-4 overflow-y-auto h-[85vh] flex flex-col border border-gray-900">
-      <h2 className="text-lg font-semibold mb-2 text-yellow">Live Tickets</h2>
-      <p className="text-gray-500 text-sm mb-4">
+      <h2 className="text-lg font-semibold mb-2 text-yellow-300">
+        Live Tickets
+      </h2>
+      <p className="text-gray-400 text-sm mb-4">
         Sorted by severity (high → low)
       </p>
 
@@ -74,7 +76,7 @@ export default function TicketsPanel({
               {/* Ticket Info */}
               <div className="flex-1 flex flex-col justify-between min-w-0">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-sm truncate text-white">
+                  <h3 className="font-semibold text-sm truncate text-yellow-300">
                     {p.description ?? "Pothole"}
                   </h3>
                   <span
@@ -86,7 +88,7 @@ export default function TicketsPanel({
                   </span>
                 </div>
 
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-300 mt-1">
                   Score: {p.severity_score?.toFixed(2) ?? "N/A"} |{" "}
                   {new Date(t.created_at).toLocaleString()}
                 </p>

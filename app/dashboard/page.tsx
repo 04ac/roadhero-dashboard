@@ -91,8 +91,10 @@ export default function DashboardPage() {
   return (
     <main className="p-6 space-y-4 bg-background text-foreground">
       <header>
-        <h1 className="text-3xl font-bold">RoadHero Dashboard</h1>
-        <p className="text-gray-400">
+        <h1 className="text-3xl font-bold text-yellow-300">
+          RoadHero Dashboard
+        </h1>
+        <p className="text-gray-300">
           Live pothole detection reports (auto-updating)
         </p>
       </header>
