@@ -18,6 +18,7 @@ type Pothole = {
   severity: "LOW" | "MEDIUM" | "HIGH";
   image_url?: string;
   description?: string;
+  severity_score?: number;
 };
 
 type Ticket = {
@@ -152,9 +153,9 @@ function RouteLine({
 
           // Draw optimized route on map
           routePolylineRef.current = L.polyline(routeCoords, {
-            color: optimizeRoute ? "#10b981" : "#2563eb",
+            color: optimizeRoute ? "#3b82f6" : "#facc15", // Blue for optimal, Yellow for severity
             weight: 5,
-            opacity: 0.75,
+            opacity: 0.8,
           }).addTo(map);
 
           // Add directional arrows
@@ -170,7 +171,7 @@ function RouteLine({
                       pathOptions: {
                         fillOpacity: 1,
                         weight: 0,
-                        color: optimizeRoute ? "#10b981" : "#2563eb",
+                        color: optimizeRoute ? "#3b82f6" : "#facc15",
                       },
                     }),
                   },
@@ -222,25 +223,13 @@ function RouteLine({
 
 const mapThemes = [
   {
-    name: "Default Light",
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution:
-      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-  },
-  {
-    name: "Carto Dark",
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution:
-      '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
-  },
-  {
     name: "Stadia Dark",
     url: "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png",
     attribution:
       '© <a href="https://stadiamaps.com/">Stadia Maps</a>, © <a href="https://openmaptiles.org/">OpenMapTiles</a> © <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
   },
   {
-    name: "Labeled Satelite",
+    name: "Satellite",
     url: "https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.png",
     attribution:
       '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors',
@@ -252,9 +241,13 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
   const [isCalculatingRoutes, setIsCalculatingRoutes] = useState(false);
   const [optimizeRoute, setOptimizeRoute] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [currentTheme, setCurrentTheme] = useState(mapThemes[0]);
+  const [currentTheme, setCurrentTheme] = useState(mapThemes[0]); // Default to Stadia Dark
 
-  const severityColors = { HIGH: "red", MEDIUM: "orange", LOW: "green" };
+  const severityColors = {
+    HIGH: "#ef4444", // Red for high severity
+    MEDIUM: "#facc15", // Yellow for medium
+    LOW: "#10b981", // Green for low
+  };
   const severityWeights = { HIGH: 3, MEDIUM: 2, LOW: 1 };
 
   const numberedIcon = (severity: string, number: number) =>
@@ -310,23 +303,28 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
         <select
           onChange={handleThemeChange}
           value={currentTheme.name}
-          className="bg-white/95 backdrop-blur-sm text-sm text-gray-700 font-medium border border-gray-200 rounded-lg px-3 py-1.5 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all appearance-none"
+          className="bg-black text-white border border-gray-800 rounded-lg px-3 py-1.5 shadow-lg hover:bg-gray-900 transition-all appearance-none text-sm font-medium"
+          style={{ colorScheme: "dark" }}
         >
           {mapThemes.map((theme) => (
-            <option key={theme.name} value={theme.name}>
+            <option
+              key={theme.name}
+              value={theme.name}
+              className="bg-black text-white"
+            >
               {theme.name}
             </option>
           ))}
         </select>
         <button
           onClick={() => setOptimizeRoute((o) => !o)}
-          className="bg-white/95 backdrop-blur-sm text-sm text-gray-700 font-medium border border-gray-200 rounded-lg px-3 py-1.5 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all"
+          className="bg-black text-white border border-gray-800 rounded-lg px-3 py-1.5 shadow-lg hover:bg-gray-900 transition-all text-sm font-medium"
         >
           {optimizeRoute ? "🎯 Optimal Route" : "⚡ By Severity"}
         </button>
         <button
           onClick={() => setShowRoutes((s) => !s)}
-          className="bg-white/95 backdrop-blur-sm text-sm text-gray-700 font-medium border border-gray-200 rounded-lg px-3 py-1.5 shadow-md hover:shadow-lg hover:bg-gray-50 transition-all"
+          className="bg-black text-white border border-gray-800 rounded-lg px-3 py-1.5 shadow-lg hover:bg-gray-900 transition-all text-sm font-medium"
         >
           {showRoutes ? "Hide Route" : "Show Route"}
         </button>
@@ -334,13 +332,13 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
 
       {/* Loading overlay */}
       {isCalculatingRoutes && showRoutes && (
-        <div className="absolute inset-0 z-1000 flex items-center justify-center bg-white/70 backdrop-blur-sm">
-          <div className="bg-white/90 backdrop-blur-md rounded-lg p-6 shadow-lg border border-gray-200 flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            <div className="text-sm font-medium text-gray-700">
+        <div className="absolute inset-0 z-1000 flex items-center justify-center bg-black/90 backdrop-blur-sm">
+          <div className="bg-black/95 backdrop-blur-md rounded-lg p-6 shadow-2xl border border-gray-800 flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400" />
+            <div className="text-sm font-medium text-white">
               Calculating Routes
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-gray-400">
               Finding optimal path between potholes...
             </div>
           </div>
@@ -381,6 +379,10 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
                   <strong>#{index + 1} - Severity:</strong>{" "}
                   {t.pothole_metadata.severity}
                 </p>
+                <p>
+                  <strong>Score:</strong>{" "}
+                  {t.pothole_metadata.severity_score?.toFixed(2) ?? "N/A"}
+                </p>
                 <p>{t.pothole_metadata.description}</p>
                 {t.pothole_metadata.image_url && (
                   <img
@@ -396,7 +398,7 @@ export default function RealtimeMap({ tickets }: { tickets: Ticket[] }) {
                   href={`https://maps.google.com/?q=${t.pothole_metadata.latitude},${t.pothole_metadata.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block text-blue-600 hover:underline text-xs mt-2"
+                  className="block text-yellow-400 hover:text-yellow-300 hover:underline text-xs mt-2"
                 >
                   Navigate →
                 </a>

@@ -29,9 +29,6 @@ export default function DashboardPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
-    console.log(
-      "DashboardPage useEffect running. Setting up Supabase subscription..."
-    );
     // Helper to load tickets with pothole metadata
     const fetchTickets = async () => {
       console.log("Refetching tickets...");
@@ -81,7 +78,6 @@ export default function DashboardPage() {
       });
 
     return () => {
-      console.log("Cleaning up Supabase channel.");
       supabase.removeChannel(channel);
     };
   }, []);
@@ -93,10 +89,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <main className="p-6 space-y-4">
+    <main className="p-6 space-y-4 bg-background text-foreground">
       <header>
         <h1 className="text-3xl font-bold">RoadHero Dashboard</h1>
-        <p className="text-gray-600">
+        <p className="text-gray-400">
           Live pothole detection reports (auto-updating)
         </p>
       </header>

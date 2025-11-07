@@ -43,14 +43,14 @@ export default function TicketsPanel({
   }
 
   const severityColor = {
-    HIGH: "bg-red-500",
-    MEDIUM: "bg-orange-500",
-    LOW: "bg-green-500",
+    HIGH: "bg-red-500 text-white",
+    MEDIUM: "bg-yellow-400 text-black",
+    LOW: "bg-green-500 text-white",
   };
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 overflow-y-auto h-[85vh] flex flex-col">
-      <h2 className="text-lg font-semibold mb-2">Live Tickets</h2>
+    <div className="bg-black rounded-xl shadow-2xl p-4 overflow-y-auto h-[85vh] flex flex-col border border-gray-900">
+      <h2 className="text-lg font-semibold mb-2 text-yellow">Live Tickets</h2>
       <p className="text-gray-500 text-sm mb-4">
         Sorted by severity (high → low)
       </p>
@@ -61,24 +61,24 @@ export default function TicketsPanel({
           return (
             <div
               key={t.id}
-              className="flex items-center gap-3 border-b border-gray-100 pb-3"
+              className="flex items-center gap-3 border-b border-gray-900 pb-3"
             >
               {/* Image */}
               <img
                 src={p.image_url ?? "/placeholder.png"}
                 alt="pothole"
-                className="w-20 h-16 object-cover rounded-md border cursor-pointer hover:opacity-80 transition"
+                className="w-20 h-16 object-cover rounded-md border border-gray-800 cursor-pointer hover:opacity-80 transition"
                 onClick={() => p.image_url && setLightboxImage(p.image_url)}
               />
 
               {/* Ticket Info */}
               <div className="flex-1 flex flex-col justify-between min-w-0">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-semibold text-sm truncate">
+                  <h3 className="font-semibold text-sm truncate text-white">
                     {p.description ?? "Pothole"}
                   </h3>
                   <span
-                    className={`px-2 py-0.5 text-xs text-white rounded-full shrink-0 ${
+                    className={`px-2 py-0.5 text-xs rounded-full shrink-0 font-semibold ${
                       severityColor[p.severity]
                     }`}
                   >
@@ -87,12 +87,13 @@ export default function TicketsPanel({
                 </div>
 
                 <p className="text-xs text-gray-500 mt-1">
+                  Score: {p.severity_score?.toFixed(2) ?? "N/A"} |{" "}
                   {new Date(t.created_at).toLocaleString()}
                 </p>
 
                 {/* Status Dropdown */}
                 <div className="flex items-center mt-1 gap-2">
-                  <span className="text-xs text-gray-600">Status:</span>
+                  <span className="text-xs text-gray-500">Status:</span>
                   <select
                     value={t.status}
                     onChange={(e) =>
@@ -101,14 +102,21 @@ export default function TicketsPanel({
                         e.target.value as "ACTIVE" | "COMPLETE"
                       )
                     }
-                    className={`text-xs border rounded px-1.5 py-0.5 outline-none cursor-pointer transition ${
+                    className={`text-xs border rounded px-1.5 py-0.5 outline-none cursor-pointer transition bg-black text-white ${
                       t.status === "ACTIVE"
-                        ? "border-yellow-400 text-yellow-700 bg-yellow-50"
-                        : "border-green-400 text-green-700 bg-green-50"
+                        ? "border-yellow-400"
+                        : "border-green-400"
                     }`}
                   >
-                    <option value="ACTIVE">ACTIVE</option>
-                    <option value="COMPLETE">COMPLETE</option>
+                    <option value="ACTIVE" className="bg-black text-yellow-400">
+                      ACTIVE
+                    </option>
+                    <option
+                      value="COMPLETE"
+                      className="bg-black text-green-400"
+                    >
+                      COMPLETE
+                    </option>
                   </select>
                 </div>
               </div>
@@ -118,14 +126,14 @@ export default function TicketsPanel({
                 {t.status === "ACTIVE" ? (
                   <span
                     title="Pending repair"
-                    className="text-yellow-500 text-xl font-bold"
+                    className="text-yellow-400 text-xl font-bold"
                   >
                     ⚠
                   </span>
                 ) : (
                   <span
                     title="Repair complete"
-                    className="text-green-600 text-xl font-bold"
+                    className="text-green-500 text-xl font-bold"
                   >
                     ✔
                   </span>
